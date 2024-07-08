@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ipruler
+spec:
+  selector:
+    matchLabels:
+      app: ipruler
+  template:
+    metadata:
+      labels:
+        app: ipruler
+    spec:
+      hostNetwork: true
+      containers:
+      - name: ipruler
+        image: plutocholia/ipruler:v0.0.1-ubuntu-arm64
+        imagePullPolicy: "Always"
+        # command: ["/bin/bash", "-c", "--"]
+        # args: ["while true; do sleep 30; done;"]
+        env:
+        - name: MODE
+          value: "ConfigBased"
+        # - name: ENABLE_PERSISTENCE
+        #   value: "true"
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        volumeMounts:
+        # - name: host-network-dispatcher
+        #   mountPath: /etc/networkd-dispatcher/routable.d
+        # - name: host-var-run
+        #   mountPath: /var/run
+        - name: config-yaml
+          mountPath: /app/config
+      volumes:
+      # - name: host-network-dispatcher
+      #   hostPath:
+      #     path: /etc/networkd-dispatcher/routable.d
+      #     type: Directory
+      # - name: host-var-run
+      #   hostPath:
+      #     path: /var/run
+      #     type: Directory
+      - name: config-yaml
+        configMap:
+          defaultMode: 420
+          name: ipruler
+          items:
+          - key: config.yaml
+            path: config.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ipruler
+data:
+  config.yaml: |
+    settings:
+      table-hard-sync:
+      - 102
+    rules:
+    - sourceIP: 172.31.201.12/32
+      table: 102
+    # - sourceIP: 172.31.201.13/32
+    #   table: 102
+    - sourceIP: 172.31.201.14/32
+      table: 102

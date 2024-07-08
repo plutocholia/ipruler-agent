@@ -1,0 +1,4 @@
+config/
+deploy/
+Dockerfile
+README.md

@@ -1,0 +1,11 @@
+settings:
+  table-hard-sync:
+  - 102
+  - 103
+rules:
+- sourceIP: 172.31.201.11/32
+  table: 102
+- sourceIP: 172.31.201.12/32
+  table: 103
+# - sourceIP: 172.31.201.13/32
+#   table: 103
