@@ -38,9 +38,7 @@ Environments:
 
 func apiMode() {
 	app := gin.Default()
-
 	api.SetupRoutes(app)
-
 	app.Run(fmt.Sprintf("0.0.0.0:%s", envirnment.APIPort))
 }
 
@@ -74,18 +72,18 @@ func configBasedMode() {
 
 func main() {
 	log.Println(envirnment.String())
-	if envirnment.Mode == "api" {
+	switch envirnment.Mode {
+	case "api":
 		apiMode()
-	} else if envirnment.Mode == "ConfigBased" {
+	case "ConfigBased":
 		configBasedMode()
-	} else {
+	default:
 		log.Fatalf("mode %s is not defined", envirnment.Mode)
 	}
 }
 
 func init() {
-	_, err := env.UnmarshalFromEnviron(&envirnment)
-	if err != nil {
+	if _, err := env.UnmarshalFromEnviron(&envirnment); err != nil {
 		log.Fatal(err)
 	}
 }
