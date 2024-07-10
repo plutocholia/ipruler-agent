@@ -2,7 +2,11 @@ package ipruler
 
 import (
 	"log"
+	"net"
+	"syscall"
 	"testing"
+
+	"github.com/vishvananda/netlink"
 )
 
 func TestAddingRules(t *testing.T) {
@@ -68,7 +72,7 @@ rules:
 	SyncState(configLifeCycle)
 }
 
-func TestIPRuleConfiguration(t *testing.T) {
+func TestRule_HardConfiguration(t *testing.T) {
 	var c1 string = `
 settings:
  table-hard-sync:
@@ -84,8 +88,89 @@ rules:
 	configLifeCycle := CreateConfigLifeCycle()
 	configLifeCycle.Update([]byte(c1))
 	log.Println(configLifeCycle.CurrentConfig.Settings)
-	SyncState(configLifeCycle)
+	SyncRulesState(configLifeCycle)
 	//	log.Println("adding c1")
 	// log.Println(configLifeCycle.CurrentConfig)
-	// SyncState(configLifeCycle)
+	// SyncRulesState(configLifeCycle)
+}
+
+func TestRoute_AddAndHardSync(t *testing.T) {
+	testRoute := &netlink.Route{LinkIndex: 4, Gw: net.ParseIP("172.31.201.1"), Dst: &net.IPNet{IP: net.ParseIP("172.31.201.3"), Mask: net.CIDRMask(32, 32)}, Table: 102}
+	err := netlink.RouteAdd(testRoute)
+	if err == syscall.EEXIST {
+		log.Printf("Test Route (%s) exists.", testRoute)
+	} else if err != nil {
+		log.Fatal(err)
+	} else {
+		log.Printf("Test Route (%s) is added", testRoute)
+	}
+
+	var c1 string = `
+settings:
+  table-hard-sync:
+  - 102
+  - 101
+rules:
+- sourceIP: 172.31.201.11/32
+  table: 101
+- sourceIP: 172.31.201.12/32
+  table: 102
+routes:
+- to: default
+  via: 172.31.201.1
+  table: 102
+- to: 172.31.201.4/32
+  via: 172.31.201.1
+  table: 102
+`
+	configLifeCycle := CreateConfigLifeCycle()
+	configLifeCycle.Update([]byte(c1))
+	SyncRoutesState(configLifeCycle)
+	PersistState(configLifeCycle)
+}
+
+func TestRoute_ConfigChange(t *testing.T) {
+	var c1 string = `
+settings:
+  table-hard-sync:
+  - 101
+rules:
+- sourceIP: 172.31.201.11/32
+  table: 101
+- sourceIP: 172.31.201.12/32
+  table: 102
+routes:
+- to: default
+  via: 172.31.201.1
+  table: 102
+- to: 172.31.201.4/32
+  via: 172.31.201.1
+  table: 102
+`
+
+	var c2 string = `
+settings:
+  table-hard-sync:
+  - 101
+rules:
+- sourceIP: 172.31.201.11/32
+  table: 101
+- sourceIP: 172.31.201.12/32
+  table: 102
+routes:
+#- to: default
+#  via: 172.31.201.1
+#  table: 102
+- to: 172.31.201.4/32
+  via: 172.31.201.1
+  table: 102
+`
+	configLifeCycle := CreateConfigLifeCycle()
+	configLifeCycle.Update([]byte(c1))
+	SyncRoutesState(configLifeCycle)
+	PersistState(configLifeCycle)
+
+	configLifeCycle.Update([]byte(c2))
+	SyncRoutesState(configLifeCycle)
+	PersistState(configLifeCycle)
 }

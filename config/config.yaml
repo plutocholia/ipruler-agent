@@ -9,3 +9,7 @@ rules:
   table: 103
 # - sourceIP: 172.31.201.13/32
 #   table: 103
+routes:
+- to: default
+  via: 172.31.201.1
+  table: 102
