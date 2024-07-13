@@ -106,12 +106,14 @@ func SyncRulesState(configLifeCycle *ConfigLifeCycle) {
 					}
 				}
 				if !machineRuleExists {
-					log.Printf("[Table-Hard-Sync] Rule (%s) does not exist in current config.", machineRule)
+					log.Printf("[table-hard-sync] Rule (%s) does not exist in current config.", machineRule)
 					err := netlink.RuleDel(&machineRule)
-					if err != nil {
-						log.Fatalf("Error in deleting (%s) : %s", machineRule, err)
+					if err != nil && err != syscall.ENOENT {
+						log.Fatalf("[table-Hard-sync] Error in deleting (%s) : %s", machineRule, err)
+					} else if err == syscall.ENOENT {
+						log.Printf("[table-hard-sync] Rule (%s) has already been deleted.", machineRule)
 					} else {
-						log.Printf("Rule (%s) is deleted.", machineRule)
+						log.Printf("[table-hard-sync] Rule (%s) is deleted.", machineRule)
 					}
 				}
 			}
@@ -129,12 +131,14 @@ func SyncRulesState(configLifeCycle *ConfigLifeCycle) {
 				}
 			}
 			if !ruleExists {
-				log.Printf("Rule (%s) is no more in current config", oldRule)
+				log.Printf("[sync-removed-config] Rule (%s) is no more in current config", oldRule)
 				err := netlink.RuleDel(oldRule)
-				if err != nil {
-					log.Fatalf("Error in deleting rule (%s) : %s", oldRule, err)
+				if err != nil && err != syscall.ENOENT {
+					log.Fatalf("[sync-removed-config] Error in deleting rule (%s) : %s", oldRule, err)
+				} else if err == syscall.ENOENT {
+					log.Printf("[sync-removed-config] Rule (%s) has already been deleted.", oldRule)
 				} else {
-					log.Printf("Rule (%s) is deleted.", oldRule)
+					log.Printf("[sync-removed-config] Rule (%s) is deleted.", oldRule)
 				}
 			}
 		}
@@ -226,12 +230,14 @@ func SyncRoutesState(configLifeCycle *ConfigLifeCycle) {
 				}
 			}
 			if !routeExists {
-				log.Printf("[Table-Hard-Sync] Route (%s) does not exist in current config.", machineRoute)
+				log.Printf("[table-hard-sync] Route (%s) does not exist in current config.", machineRoute)
 				err := netlink.RouteDel(&machineRoute)
-				if err != nil {
-					log.Fatalf("Error in deleting route (%s) : %s", machineRoute, err)
+				if err != nil && err != syscall.ESRCH {
+					log.Fatalf("[table-hard-sync] Error in deleting route (%s) : %s", machineRoute, err)
+				} else if err == syscall.ESRCH {
+					log.Printf("[table-hard-sync] Route (%s) has already been deleted.", machineRoute)
 				} else {
-					log.Printf("Route (%s) is deleted.", machineRoute)
+					log.Printf("[table-hard-sync] Route (%s) is deleted.", machineRoute)
 				}
 			}
 		}
@@ -249,12 +255,14 @@ func SyncRoutesState(configLifeCycle *ConfigLifeCycle) {
 				}
 			}
 			if !routeExists {
-				log.Printf("Route (%s) is no more in current config", oldRoute)
+				log.Printf("[sync-removed-config] Route (%s) is no more in current config", oldRoute)
 				err := netlink.RouteDel(oldRoute)
-				if err != nil {
-					log.Fatalf("Error in deleting Route (%s) : %s", oldRoute, err)
+				if err != nil && err != syscall.ESRCH {
+					log.Fatalf("[sync-removed-config] Error in deleting Route (%s) : %s", oldRoute, err)
+				} else if err == syscall.ESRCH {
+					log.Printf("[sync-removed-config] Route (%s) has already been deleted.", oldRoute)
 				} else {
-					log.Printf("Route (%s) is deleted.", oldRoute)
+					log.Printf("[sync-removed-config] Route (%s) is deleted.", oldRoute)
 				}
 			}
 		}

@@ -168,9 +168,9 @@ routes:
 	configLifeCycle := CreateConfigLifeCycle()
 	configLifeCycle.Update([]byte(c1))
 	SyncRoutesState(configLifeCycle)
-	PersistState(configLifeCycle)
+	// PersistState(configLifeCycle)
 
 	configLifeCycle.Update([]byte(c2))
 	SyncRoutesState(configLifeCycle)
-	PersistState(configLifeCycle)
+	// PersistState(configLifeCycle)
 }
