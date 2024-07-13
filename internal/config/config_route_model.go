@@ -15,12 +15,28 @@ type RouteModel struct {
 	Table    int    `yaml:"table"`
 	Dev      string `yaml:"dev"`
 	Protocol string `yaml:"protocol"`
+	Flag     string `yaml:"flag"`
+	Scope    string `yaml:"scope"`
 }
 
 var RouteProtocols map[string]int = map[string]int{
-	"kernel": 2,
-	"boot":   3,
-	"static": 4,
+	"kernel": unix.RTPROT_KERNEL,
+	"boot":   unix.RTPROT_BOOT,
+	"static": unix.RTPROT_STATIC,
+}
+
+var RouteFlags map[string]int = map[string]int{
+	"onlink":    unix.RTNH_F_ONLINK,
+	"pervasive": unix.RTNH_F_PERVASIVE,
+}
+
+var RouteScopes map[string]uint8 = map[string]uint8{
+	// "global": netlink.SCOPE_UNIVERSE,
+	// "link":   netlink.SCOPE_LINK,
+	// "host":   netlink.SCOPE_HOST,
+	"global": unix.RT_SCOPE_UNIVERSE,
+	"link":   unix.RT_SCOPE_LINK,
+	"host":   unix.RT_SCOPE_HOST,
 }
 
 // RouteModel Methods
@@ -90,7 +106,7 @@ func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 		route.LinkIndex = link.Attrs().Index
 	}
 
-	// add `Type` to route (`ip route add` command sets RTN_UNICAST when type is not defined)
+	// handle protocol
 	if r.Protocol != "" {
 		if value, exists := RouteProtocols[r.Protocol]; exists {
 			route.Protocol = value
@@ -102,6 +118,29 @@ func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 		route.Protocol = unix.RTPROT_BOOT
 	}
 
+	// handle flag
+	if r.Flag != "" {
+		if value, exists := RouteFlags[r.Flag]; exists {
+			route.Flags = value
+		} else {
+			log.Fatalf("Route Flags '%s' does not exist.\n", r.Flag)
+		}
+	} else {
+		route.Flags = 0
+	}
+
+	// handle Scope
+	if r.Scope != "" {
+		if value, exists := RouteScopes[r.Scope]; exists {
+			route.Scope = netlink.Scope(value)
+		} else {
+			log.Fatalf("Route Scope '%s' does not exist.\n", r.Scope)
+		}
+	} else {
+		route.Scope = unix.RT_SCOPE_UNIVERSE
+	}
+
+	// add `Type` to route (`ip route add` command sets RTN_UNICAST when type is not defined)
 	route.Type = unix.RTN_UNICAST
 
 	return route
