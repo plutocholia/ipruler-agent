@@ -17,7 +17,7 @@ type RouteModel struct {
 	Protocol string `yaml:"protocol"`
 }
 
-var Protocols map[string]int = map[string]int{
+var RouteProtocols map[string]int = map[string]int{
 	"kernel": 2,
 	"boot":   3,
 	"static": 4,
@@ -92,7 +92,7 @@ func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 
 	// add `Type` to route (`ip route add` command sets RTN_UNICAST when type is not defined)
 	if r.Protocol != "" {
-		if value, exists := Protocols[r.Protocol]; exists {
+		if value, exists := RouteProtocols[r.Protocol]; exists {
 			route.Protocol = value
 		} else {
 			log.Fatalf("Route Protocol '%s' does not exist.\n", r.Protocol)
