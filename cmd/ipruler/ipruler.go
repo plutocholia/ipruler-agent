@@ -59,11 +59,7 @@ echo "Script executed and lock file created."
 
 	// Contert route list to it's corresponding `ip route add` linux command
 	for _, route := range configLifeCycle.CurrentConfig.Routes {
-		dst := "default"
-		if route.Dst != nil {
-			dst = route.Dst.IP.String()
-		}
-		mainContent += fmt.Sprintf("ip route add to %s via %s table %d;\n", dst, route.Gw.String(), route.Table)
+		mainContent += config.RouteToIPRouteCommand(route) + ";\n"
 	}
 
 	content := headContent + mainContent + footerContent

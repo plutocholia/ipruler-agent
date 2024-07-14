@@ -30,7 +30,7 @@ var RouteFlags map[string]int = map[string]int{
 	"pervasive": unix.RTNH_F_PERVASIVE,
 }
 
-var RouteScopes map[string]uint8 = map[string]uint8{
+var RouteScopes map[string]int = map[string]int{
 	// "global": netlink.SCOPE_UNIVERSE,
 	// "link":   netlink.SCOPE_LINK,
 	// "host":   netlink.SCOPE_HOST,
@@ -39,7 +39,6 @@ var RouteScopes map[string]uint8 = map[string]uint8{
 	"host":   unix.RT_SCOPE_HOST,
 }
 
-// RouteModel Methods
 func (r *RouteModel) String() string {
 	return fmt.Sprintf("to: %s - via: %s - table: %d", r.To, r.Via, r.Table)
 }
@@ -144,4 +143,49 @@ func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 	route.Type = unix.RTN_UNICAST
 
 	return route
+}
+
+func reverseMap(m map[string]int) map[int]string {
+	n := make(map[int]string, len(m))
+	for k, v := range m {
+		n[v] = k
+	}
+	return n
+}
+
+func RouteToIPRouteCommand(r *netlink.Route) string {
+	content := "ip route add"
+
+	scope := reverseMap(RouteScopes)[int(r.Scope)]
+	protocol := reverseMap(RouteProtocols)[r.Protocol]
+	flag := reverseMap(RouteFlags)[r.Flags]
+
+	dev := ""
+	links, err := netlink.LinkList()
+	if err != nil {
+		log.Fatalf("Failed to list links: %v", err)
+	}
+	for _, link := range links {
+		if link.Attrs().Index == r.LinkIndex {
+			dev = link.Attrs().Name
+			break
+		}
+	}
+
+	to := "default"
+	if r.Dst != nil {
+		to = r.Dst.String()
+	}
+
+	content += fmt.Sprintf(" to %s", to)
+	content += fmt.Sprintf(" via %s", r.Gw)
+	content += fmt.Sprintf(" table %d", r.Table)
+	content += fmt.Sprintf(" dev %s", dev)
+	content += fmt.Sprintf(" proto %s", protocol)
+	content += fmt.Sprintf(" scope %s", scope)
+	if flag != "" {
+		content += fmt.Sprintf(" %s", flag)
+	}
+
+	return content
 }
