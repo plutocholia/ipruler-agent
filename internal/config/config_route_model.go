@@ -39,13 +39,24 @@ var RouteScopes map[string]int = map[string]int{
 	"host":   unix.RT_SCOPE_HOST,
 }
 
+func getReachableLink(ip net.IP) netlink.Link {
+	routes, err := netlink.RouteGet(ip)
+	if err != nil {
+		log.Fatalf("RouteGet failed: %v", err)
+	}
+	link, err := netlink.LinkByIndex(routes[0].LinkIndex)
+	if err != nil {
+		log.Fatalf("LinkByIndex failed: %v", err)
+	}
+	return link
+}
+
 func (r *RouteModel) String() string {
 	return fmt.Sprintf("to: %s - via: %s - table: %d", r.To, r.Via, r.Table)
 }
 
 func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 	route := &netlink.Route{}
-
 	// add `Dst` to route
 	if r.To == "default" {
 		route.Dst = nil
@@ -71,32 +82,8 @@ func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 
 	// add `LinkIndex` to route based on route.Gw if Dev is not defined.
 	if r.Dev == "" {
-		links, err := netlink.LinkList()
-		if err != nil {
-			log.Fatalf("Failed to list links: %v", err)
-		}
-		var linkIndex int
-		found := false
-		for _, link := range links {
-			addrs, err := netlink.AddrList(link, netlink.FAMILY_ALL)
-			if err != nil {
-				log.Fatalf("Failed to list addresses: %v", err)
-			}
-			for _, addr := range addrs {
-				if addr.IPNet != nil && addr.IPNet.Contains(route.Gw) {
-					linkIndex = link.Attrs().Index
-					found = true
-					break
-				}
-			}
-			if found {
-				break
-			}
-		}
-		if !found {
-			log.Fatalf("No interface found supporting the IP address: %s", route.Gw)
-		}
-		route.LinkIndex = linkIndex
+		link := getReachableLink(route.Gw)
+		route.LinkIndex = link.Attrs().Index
 	} else { // add `LinkIndex` to route based on route.Dev
 		link, err := netlink.LinkByName(r.Dev)
 		if err != nil {
