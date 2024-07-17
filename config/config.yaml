@@ -18,7 +18,7 @@ routes:
   via: 172.31.201.1
   table: 102
   protocol: static
-  flag: onlink
+  on-link: true
 ## below example won't work!
 # - to: 172.31.201.3/32
 #   via: 172.31.201.1

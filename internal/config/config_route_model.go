@@ -15,7 +15,7 @@ type RouteModel struct {
 	Table    int    `yaml:"table"`
 	Dev      string `yaml:"dev"`
 	Protocol string `yaml:"protocol"`
-	Flag     string `yaml:"flag"`
+	OnLink   bool   `yaml:"on-link"`
 	Scope    string `yaml:"scope"`
 }
 
@@ -105,11 +105,11 @@ func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 	}
 
 	// handle flag
-	if r.Flag != "" {
-		if value, exists := RouteFlags[r.Flag]; exists {
+	if r.OnLink {
+		if value, exists := RouteFlags["onlink"]; exists {
 			route.Flags = value
 		} else {
-			log.Fatalf("Route Flags '%s' does not exist.\n", r.Flag)
+			log.Fatalf("Route flags '%s' does not exist.\n", "onlink")
 		}
 	} else {
 		route.Flags = 0
@@ -120,7 +120,7 @@ func (r *RouteModel) ToNetlinkRoute() *netlink.Route {
 		if value, exists := RouteScopes[r.Scope]; exists {
 			route.Scope = netlink.Scope(value)
 		} else {
-			log.Fatalf("Route Scope '%s' does not exist.\n", r.Scope)
+			log.Fatalf("Route scope '%s' does not exist.\n", r.Scope)
 		}
 	} else {
 		route.Scope = unix.RT_SCOPE_UNIVERSE
