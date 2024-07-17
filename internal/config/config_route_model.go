@@ -165,8 +165,12 @@ func RouteToIPRouteCommand(r *netlink.Route) string {
 	}
 
 	content += fmt.Sprintf(" to %s", to)
-	content += fmt.Sprintf(" via %s", r.Gw)
-	content += fmt.Sprintf(" table %d", r.Table)
+	if r.Gw != nil {
+		content += fmt.Sprintf(" via %s", r.Gw)
+	}
+	if r.Table != 0 {
+		content += fmt.Sprintf(" table %d", r.Table)
+	}
 	content += fmt.Sprintf(" dev %s", dev)
 	content += fmt.Sprintf(" proto %s", protocol)
 	content += fmt.Sprintf(" scope %s", scope)
