@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ipruler-api
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: ipruler-api
+  template:
+    metadata:
+      labels:
+        app: ipruler-api
+    spec:
+      hostNetwork: true
+      containers:
+      - name: ipruler
+        image: plutocholia/ipruler:v0.0.3-ubuntu-arm64
+        imagePullPolicy: "Always"
+        env:
+        - name: MODE
+          value: "api"
+        # - name: ENABLE_PERSISTENCE
+        #   value: "true"
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        # volumeMounts:
+        # - name: host-network-dispatcher
+        #   mountPath: /etc/networkd-dispatcher/routable.d
+      # volumes:
+      # - name: host-network-dispatcher
+      #   hostPath:
+      #     path: /etc/networkd-dispatcher/routable.d
+      #     type: Directory

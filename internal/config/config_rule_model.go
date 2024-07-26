@@ -17,7 +17,7 @@ func (r *RuleModel) String() string {
 	return fmt.Sprintf("Src: %s - Table: %d", r.From, r.Table)
 }
 
-func (r *RuleModel) ToNetlinkRule() *netlink.Rule {
+func (r *RuleModel) ToNetlink() interface{} {
 	rule := netlink.NewRule()
 	rule.Table = r.Table
 

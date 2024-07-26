@@ -1,13 +1,12 @@
 package ipruler
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"syscall"
 
 	"github.com/plutocholia/ipruler/internal/config"
+	"github.com/plutocholia/ipruler/internal/utils"
 	"github.com/vishvananda/netlink"
 )
 
@@ -34,7 +33,30 @@ func (c *ConfigLifeCycle) Update(data []byte) {
 	}
 }
 
-func PersistState(configLifeCycle *ConfigLifeCycle) {
+// It's equivalent to Update method which does syncs in proper order
+func (c *ConfigLifeCycle) WeaveSync(data []byte) {
+	configModel := config.CreateConfigModel(data)
+	newConfig := &config.Config{}
+
+	if c.CurrentConfig == nil {
+		c.CurrentConfig = newConfig
+	} else {
+		c.OldConfig = c.CurrentConfig
+		c.CurrentConfig = newConfig
+	}
+
+	newConfig.AddSettings(configModel.Settings)
+	newConfig.AddVlans(configModel.Vlans)
+	c.SyncVlansState()
+
+	newConfig.AddRoutes(configModel.Routes)
+	c.SyncRoutesState()
+
+	newConfig.AddRules(configModel.Rules)
+	c.SyncRulesState()
+}
+
+func (c *ConfigLifeCycle) PersistState() {
 	headContent := `#!/bin/bash
 LOCK_FILE="/var/run/networkd-dispatcher-routable.lock" 
 
@@ -52,14 +74,19 @@ echo "Script executed and lock file created."
 
 	mainContent := ``
 
-	// Convert rule list to it's corresponding `ip rule add` linux command.
-	for _, rule := range configLifeCycle.CurrentConfig.Rules {
-		mainContent += fmt.Sprintf("ip rule add from %s table %d;\n", rule.Src.IP.String(), rule.Table)
+	// Contert Vlan list to it's corresponding `ip link add` linux command
+	for _, vlan := range c.CurrentConfig.Vlans {
+		mainContent += utils.VlanToIPCommand(vlan) + ";\n"
 	}
 
 	// Contert route list to it's corresponding `ip route add` linux command
-	for _, route := range configLifeCycle.CurrentConfig.Routes {
-		mainContent += config.RouteToIPRouteCommand(route) + ";\n"
+	for _, route := range c.CurrentConfig.Routes {
+		mainContent += utils.RouteToIPCommand(route) + ";\n"
+	}
+
+	// Convert rule list to it's corresponding `ip rule add` linux command.
+	for _, rule := range c.CurrentConfig.Rules {
+		mainContent += utils.RuleToIPCommand(rule) + ";\n"
 	}
 
 	content := headContent + mainContent + footerContent
@@ -82,14 +109,13 @@ echo "Script executed and lock file created."
 		log.Fatalln("Error making file executable:", err)
 		return
 	}
-
-	log.Println("persisting configurations at ", PERSIST_PATH)
+	// log.Println("persisting configurations at ", PERSIST_PATH)
 }
 
-func SyncRulesState(configLifeCycle *ConfigLifeCycle) {
+func (c *ConfigLifeCycle) SyncRulesState() {
 	machineRules, _ := netlink.RuleList(netlink.FAMILY_V4)
-	curSettings := configLifeCycle.CurrentConfig.Settings
-	curRules := configLifeCycle.CurrentConfig.Rules
+	curSettings := c.CurrentConfig.Settings
+	curRules := c.CurrentConfig.Rules
 	// remove rules base on table-hard-sync
 	if len(curSettings.TableHardSync) != 0 {
 		for _, machineRule := range machineRules {
@@ -116,8 +142,8 @@ func SyncRulesState(configLifeCycle *ConfigLifeCycle) {
 		}
 	}
 	// delete removed rules based on old config
-	if configLifeCycle.OldConfig != nil {
-		oldRules := configLifeCycle.OldConfig.Rules
+	if c.OldConfig != nil {
+		oldRules := c.OldConfig.Rules
 		for _, oldRule := range oldRules {
 			ruleExists := false
 			for _, curRule := range curRules {
@@ -157,59 +183,9 @@ func SyncRulesState(configLifeCycle *ConfigLifeCycle) {
 	}
 }
 
-// custom netlink.route equality check (not used)
-func CheckRouteEquality(r *netlink.Route, x *netlink.Route) bool {
-	if r.Gw.Equal(x.Gw) && r.Table == x.Table {
-		if (r.Dst == nil && x.Dst == nil) ||
-			(r.Dst != nil && x.Dst != nil && r.Dst.IP.Equal(x.Dst.IP)) {
-			return true
-		}
-	}
-	return false
-}
-
-func PrintFullRoute(r *netlink.Route) string {
-	elems := []string{}
-	if len(r.MultiPath) == 0 {
-		elems = append(elems, fmt.Sprintf("Ifindex: %d", r.LinkIndex))
-	}
-	if r.MPLSDst != nil {
-		elems = append(elems, fmt.Sprintf("Dst: %d", r.MPLSDst))
-	} else {
-		elems = append(elems, fmt.Sprintf("Dst: %s", r.Dst))
-	}
-	if r.NewDst != nil {
-		elems = append(elems, fmt.Sprintf("NewDst: %s", r.NewDst))
-	}
-	if r.Encap != nil {
-		elems = append(elems, fmt.Sprintf("Encap: %s", r.Encap))
-	}
-	elems = append(elems, fmt.Sprintf("Src: %s", r.Src))
-	if len(r.MultiPath) > 0 {
-		elems = append(elems, fmt.Sprintf("Gw: %s", r.MultiPath))
-	} else {
-		elems = append(elems, fmt.Sprintf("Gw: %s", r.Gw))
-	}
-	elems = append(elems, fmt.Sprintf("Flags: %s", r.ListFlags()))
-	elems = append(elems, fmt.Sprintf("Table: %d", r.Table))
-
-	// Added
-	elems = append(elems, fmt.Sprintf("ILinkIndex: %d", r.ILinkIndex))
-	elems = append(elems, fmt.Sprintf("Scope: %d", r.Scope))
-	elems = append(elems, fmt.Sprintf("Protocol: %d", r.Protocol))
-	elems = append(elems, fmt.Sprintf("Priority: %d", r.Priority))
-	elems = append(elems, fmt.Sprintf("Type: %d", r.Type))
-	elems = append(elems, fmt.Sprintf("Tos: %d", r.Tos))
-	elems = append(elems, fmt.Sprintf("MTU: %d", r.MTU))
-	elems = append(elems, fmt.Sprintf("AdvMSS: %d", r.AdvMSS))
-	elems = append(elems, fmt.Sprintf("Hoplimit: %d", r.Hoplimit))
-
-	return fmt.Sprintf("{%s}", strings.Join(elems, " "))
-}
-
-func SyncRoutesState(configLifeCycle *ConfigLifeCycle) {
-	curRoutes := configLifeCycle.CurrentConfig.Routes
-	curSettings := configLifeCycle.CurrentConfig.Settings
+func (c *ConfigLifeCycle) SyncRoutesState() {
+	curRoutes := c.CurrentConfig.Routes
+	curSettings := c.CurrentConfig.Settings
 
 	// remove routes base on table-hard-sync
 	for table := range curSettings.TableHardSync {
@@ -217,9 +193,6 @@ func SyncRoutesState(configLifeCycle *ConfigLifeCycle) {
 		for _, machineRoute := range machineRoutes {
 			routeExists := false
 			for _, route := range curRoutes {
-				// fmt.Printf("route: %s\n", PrintFullRoute(route))
-				// fmt.Printf("machi: %s\n", PrintFullRoute(&machineRoute))
-				// if CheckRouteEquality(&machineRoute, route)
 				if machineRoute.Equal(*route) {
 					routeExists = true
 					break
@@ -239,12 +212,11 @@ func SyncRoutesState(configLifeCycle *ConfigLifeCycle) {
 		}
 	}
 	// delete removed routes based on old config
-	if configLifeCycle.OldConfig != nil {
-		oldRoutes := configLifeCycle.OldConfig.Routes
+	if c.OldConfig != nil {
+		oldRoutes := c.OldConfig.Routes
 		for _, oldRoute := range oldRoutes {
 			routeExists := false
 			for _, curRoute := range curRoutes {
-				// if CheckRouteEquality(oldRoute, curRoute)
 				if oldRoute.Equal(*curRoute) {
 					routeExists = true
 					break
@@ -276,7 +248,51 @@ func SyncRoutesState(configLifeCycle *ConfigLifeCycle) {
 	}
 }
 
-func SyncState(configLifeCycle *ConfigLifeCycle) {
-	SyncRulesState(configLifeCycle)
-	SyncRoutesState(configLifeCycle)
+func (c *ConfigLifeCycle) SyncVlansState() {
+	curVlans := c.CurrentConfig.Vlans
+
+	// delete removed vlans based on old config
+	if c.OldConfig != nil {
+		oldVlans := c.OldConfig.Vlans
+		for _, oldVlan := range oldVlans {
+			vlanExists := false
+			for _, curVlan := range curVlans {
+				if utils.VlanEquality(oldVlan, curVlan) {
+					vlanExists = true
+					break
+				}
+			}
+			if !vlanExists {
+				log.Printf("[sync-removed-config] vlan (%s) is no more in current config", utils.VlanToString(oldVlan))
+				err := netlink.LinkDel(oldVlan)
+				if err != nil && err != syscall.ESRCH {
+					log.Fatalf("[sync-removed-config] Error in deleting Vlan (%s) : %s", utils.VlanToString(oldVlan), err)
+				} else if err == syscall.ESRCH {
+					log.Printf("[sync-removed-config] Vlan (%s) has already been deleted.", utils.VlanToString(oldVlan))
+				} else {
+					log.Printf("[sync-removed-config] Vlan (%s) is deleted.", utils.VlanToString(oldVlan))
+				}
+			}
+		}
+	}
+	// add vlans
+	for _, vlan := range curVlans {
+		err := netlink.LinkAdd(vlan)
+		if err == syscall.EEXIST {
+			// log.Printf("Vlan (%s) exists.", utils.VlanToString(vlan))
+		} else if err != nil {
+			log.Fatal(err)
+		} else {
+			if err := netlink.LinkSetUp(vlan); err != nil {
+				log.Fatalf("Unable to up the %s link", utils.VlanToString(vlan))
+			}
+			log.Printf("Vlan (%s) is added", utils.VlanToString(vlan))
+		}
+	}
+}
+
+func (c *ConfigLifeCycle) SyncState() {
+	c.SyncVlansState()
+	c.SyncRoutesState()
+	c.SyncRulesState()
 }

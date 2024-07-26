@@ -26,11 +26,14 @@ func update(c *gin.Context) {
 		return
 	}
 
-	configLifeCycle.Update(body)
-	ipruler.SyncState(configLifeCycle)
-	ipruler.PersistState(configLifeCycle)
+	if string(body) != "" {
+		configLifeCycle.WeaveSync(body)
+		// configLifeCycle.PersistState()
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusBadRequest, gin.H{"status": "BadConfigFile"})
 }
 
 func init() {

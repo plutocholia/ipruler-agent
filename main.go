@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"reflect"
 	"time"
@@ -14,7 +15,13 @@ import (
 )
 
 var (
-	envirnment Environment
+	envirnment  Environment
+	LogLevelMap map[string]int = map[string]int{
+		"INFO":  int(slog.LevelInfo),
+		"DEBUG": int(slog.LevelDebug),
+		"WARN":  int(slog.LevelWarn),
+		"ERROR": int(slog.LevelError),
+	}
 )
 
 type Environment struct {
@@ -23,6 +30,7 @@ type Environment struct {
 	APIPort              string `env:"API_PORT,default=8080"`
 	ConfigPath           string `env:"CONFIG_PATH,default=./config/config.yaml"`
 	ConfigReloadDuration uint   `env:"CONFIG_RELOAD_DURATION_SECONDS,default=15"`
+	LogLevel             string `env:"LOG_LEVEL,default=INFO"`
 }
 
 func (e *Environment) String() string {
@@ -33,7 +41,8 @@ Environments:
 	APIPort: %s
 	ConfigPath: %s
 	ConfigReloadDuration: %d
-`, e.Mode, e.EnablePersistence, e.APIPort, e.ConfigPath, e.ConfigReloadDuration)
+	LogLevel: %s
+`, e.Mode, e.EnablePersistence, e.APIPort, e.ConfigPath, e.ConfigReloadDuration, e.LogLevel)
 }
 
 func apiMode() {
@@ -56,14 +65,11 @@ func configBasedMode() {
 		if !reflect.DeepEqual(data, oldData) {
 			log.Println("detected changes in config")
 			oldData = data
-			configLifeCycle.Update(data)
-			ipruler.SyncState(configLifeCycle)
-			if envirnment.EnablePersistence {
-				ipruler.PersistState(configLifeCycle)
-			}
-		} else {
-			configLifeCycle.Update(data)
-			ipruler.SyncState(configLifeCycle)
+		}
+
+		configLifeCycle.WeaveSync(data)
+		if envirnment.EnablePersistence {
+			configLifeCycle.PersistState()
 		}
 
 		time.Sleep(time.Duration(envirnment.ConfigReloadDuration) * time.Second)
@@ -72,6 +78,16 @@ func configBasedMode() {
 
 func main() {
 	log.Println(envirnment.String())
+
+	// // setup slog
+	// if value, exists := LogLevelMap[envirnment.LogLevel]; exists {
+	// 	logger := slog.New(slog.NewTextHandler(os.Stderr,
+	// 		&slog.HandlerOptions{Level: slog.Level(value)}))
+	// 	slog.SetDefault(logger)
+	// } else {
+	// 	log.Fatalf("loglevel %s is not valid", envirnment.LogLevel)
+	// }
+
 	switch envirnment.Mode {
 	case "api":
 		apiMode()

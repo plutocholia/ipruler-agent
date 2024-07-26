@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: ipruler
+  namespace: kube-system
 spec:
   selector:
     matchLabels:
@@ -30,18 +31,12 @@ spec:
         volumeMounts:
         # - name: host-network-dispatcher
         #   mountPath: /etc/networkd-dispatcher/routable.d
-        # - name: host-var-run
-        #   mountPath: /var/run
         - name: config-yaml
           mountPath: /app/config
       volumes:
       # - name: host-network-dispatcher
       #   hostPath:
       #     path: /etc/networkd-dispatcher/routable.d
-      #     type: Directory
-      # - name: host-var-run
-      #   hostPath:
-      #     path: /var/run
       #     type: Directory
       - name: config-yaml
         configMap:
@@ -61,9 +56,7 @@ data:
       table-hard-sync:
       - 102
     rules:
-    - sourceIP: 172.31.201.12/32
+    - from: 172.31.201.12/32
       table: 102
-    # - sourceIP: 172.31.201.13/32
-    #   table: 102
-    - sourceIP: 172.31.201.14/32
+    - from: 172.31.201.14/32
       table: 102

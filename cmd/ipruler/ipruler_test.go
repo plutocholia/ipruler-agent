@@ -12,19 +12,19 @@ import (
 func TestAddingRules(t *testing.T) {
 	var c1 string = `
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
-- sourceIP: 172.31.201.12/32
+- from: 172.31.201.12/32
   table: 102
 `
 
 	var c2 string = `
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
-- sourceIP: 172.31.201.12/32
+- from: 172.31.201.12/32
   table: 102
-- sourceIP: 172.31.201.13/32
+- from: 172.31.201.13/32
   table: 103
 `
 
@@ -32,27 +32,27 @@ rules:
 
 	log.Println("adding c1")
 	configLifeCycle.Update([]byte(c1))
-	SyncState(configLifeCycle)
+	configLifeCycle.SyncState()
 
 	log.Println("adding c2")
 	configLifeCycle.Update([]byte(c2))
 	log.Println("Current Configuration: ", configLifeCycle.CurrentConfig.String())
 	log.Println("Old Configuration: ", configLifeCycle.OldConfig.String())
-	SyncState(configLifeCycle)
+	configLifeCycle.SyncState()
 }
 
 func TestRemovingRules(t *testing.T) {
 	var c1 string = `
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
-- sourceIP: 172.31.201.12/32
+- from: 172.31.201.12/32
   table: 102
 `
 
 	var c2 string = `
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
 `
 
@@ -60,7 +60,7 @@ rules:
 
 	log.Println("adding c1")
 	configLifeCycle.Update([]byte(c1))
-	SyncState(configLifeCycle)
+	configLifeCycle.SyncState()
 
 	// log.Println("Sleeping for 10s ...")
 	// time.Sleep(10 * time.Second)
@@ -69,7 +69,7 @@ rules:
 	configLifeCycle.Update([]byte(c2))
 	log.Println("Current Configuration: ", configLifeCycle.CurrentConfig.String())
 	log.Println("Old Configuration: ", configLifeCycle.OldConfig.String())
-	SyncState(configLifeCycle)
+	configLifeCycle.SyncState()
 }
 
 func TestRule_HardConfiguration(t *testing.T) {
@@ -79,16 +79,16 @@ settings:
  - 102
  - 101
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
-- sourceIP: 172.31.201.12/32
+- from: 172.31.201.12/32
   table: 102
 `
 
 	configLifeCycle := CreateConfigLifeCycle()
 	configLifeCycle.Update([]byte(c1))
 	log.Println(configLifeCycle.CurrentConfig.Settings)
-	SyncRulesState(configLifeCycle)
+	configLifeCycle.SyncRulesState()
 	//	log.Println("adding c1")
 	// log.Println(configLifeCycle.CurrentConfig)
 	// SyncRulesState(configLifeCycle)
@@ -111,9 +111,9 @@ settings:
   - 102
   - 101
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
-- sourceIP: 172.31.201.12/32
+- from: 172.31.201.12/32
   table: 102
 routes:
 - to: default
@@ -125,8 +125,8 @@ routes:
 `
 	configLifeCycle := CreateConfigLifeCycle()
 	configLifeCycle.Update([]byte(c1))
-	SyncRoutesState(configLifeCycle)
-	PersistState(configLifeCycle)
+	configLifeCycle.SyncRoutesState()
+	configLifeCycle.PersistState()
 }
 
 func TestRoute_ConfigChange(t *testing.T) {
@@ -135,9 +135,9 @@ settings:
   table-hard-sync:
   - 101
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
-- sourceIP: 172.31.201.12/32
+- from: 172.31.201.12/32
   table: 102
 routes:
 - to: default
@@ -153,9 +153,9 @@ settings:
   table-hard-sync:
   - 101
 rules:
-- sourceIP: 172.31.201.11/32
+- from: 172.31.201.11/32
   table: 101
-- sourceIP: 172.31.201.12/32
+- from: 172.31.201.12/32
   table: 102
 routes:
 #- to: default
@@ -167,10 +167,10 @@ routes:
 `
 	configLifeCycle := CreateConfigLifeCycle()
 	configLifeCycle.Update([]byte(c1))
-	SyncRoutesState(configLifeCycle)
+	configLifeCycle.SyncRoutesState()
 	// PersistState(configLifeCycle)
 
 	configLifeCycle.Update([]byte(c2))
-	SyncRoutesState(configLifeCycle)
+	configLifeCycle.SyncRoutesState()
 	// PersistState(configLifeCycle)
 }
