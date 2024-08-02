@@ -48,6 +48,7 @@ Environments:
 func apiMode() {
 	app := gin.Default()
 	api.SetupRoutes(app)
+	go api.BackgroundSync(envirnment.ConfigReloadDuration)
 	app.Run(fmt.Sprintf("0.0.0.0:%s", envirnment.APIPort))
 }
 
