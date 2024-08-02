@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ipruler-api
+  name: ipruler
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      app: ipruler-api
+      app: ipruler
   template:
     metadata:
       labels:
-        app: ipruler-api
+        app: ipruler
     spec:
       hostNetwork: true
       containers:
       - name: ipruler
-        image: plutocholia/ipruler:v0.0.5-ubuntu-arm64-debug
+        image: plutocholia/ipruler:v0.0.6-ubuntu-arm64-debug
         imagePullPolicy: "Always"
         env:
         - name: MODE

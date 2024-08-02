@@ -10,8 +10,8 @@ import (
 
 	env "github.com/Netflix/go-env"
 	"github.com/gin-gonic/gin"
-	"github.com/plutocholia/ipruler/cmd/api"
-	"github.com/plutocholia/ipruler/cmd/ipruler"
+	"github.com/plutocholia/ipruler/internal/api"
+	"github.com/plutocholia/ipruler/internal/ipruler"
 )
 
 var (
