@@ -67,7 +67,7 @@ func configBasedMode() {
 			oldData = data
 		}
 
-		configLifeCycle.WeaveSync(data)
+		configLifeCycle.WaveSync(data)
 		if envirnment.EnablePersistence {
 			configLifeCycle.PersistState()
 		}

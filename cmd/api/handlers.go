@@ -26,7 +26,7 @@ func update(c *gin.Context) {
 		return
 	}
 
-	err = configLifeCycle.WeaveSync(body)
+	err = configLifeCycle.WaveSync(body)
 	if _err, ok := err.(*ipruler.EmptyConfig); ok {
 		log.Println(_err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": _err.Error()})

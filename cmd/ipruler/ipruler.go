@@ -23,6 +23,7 @@ func CreateConfigLifeCycle() *ConfigLifeCycle {
 	return &ConfigLifeCycle{}
 }
 
+// Only used in tests (will be removed)
 func (c *ConfigLifeCycle) Update(data []byte) {
 	configModel := config.CreateConfigModel(data)
 	if c.CurrentConfig == nil {
@@ -34,7 +35,7 @@ func (c *ConfigLifeCycle) Update(data []byte) {
 }
 
 // It's equivalent to Update method which does syncs in proper order
-func (c *ConfigLifeCycle) WeaveSync(data []byte) error {
+func (c *ConfigLifeCycle) WaveSync(data []byte) error {
 	configModel := config.CreateConfigModel(data)
 
 	if configModel.IsEmpty() {
@@ -56,6 +57,7 @@ func (c *ConfigLifeCycle) WeaveSync(data []byte) error {
 	return nil
 }
 
+// Creates new ConfigModel and adds it to the CurrentConfig attr of the ConfigLifeCyle
 func (c *ConfigLifeCycle) CreateNewConfig() *config.Config {
 	newConfig := &config.Config{}
 	if c.CurrentConfig == nil {
