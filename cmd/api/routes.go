@@ -5,6 +5,6 @@ import (
 )
 
 func SetupRoutes(app *gin.Engine) {
-	app.GET("/", ip)
+	app.GET("/health", health)
 	app.POST("/update", update)
 }

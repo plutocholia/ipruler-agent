@@ -12,6 +12,13 @@ type RuleModel struct {
 	Table int    `yaml:"table"`
 }
 
+func (r *RuleModel) IsEmpty() bool {
+	if r.From == "" && r.Table == 0 {
+		return true
+	}
+	return false
+}
+
 // RuleModel Methods
 func (r *RuleModel) String() string {
 	return fmt.Sprintf("Src: %s - Table: %d", r.From, r.Table)

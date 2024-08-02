@@ -34,16 +34,14 @@ func (c *ConfigLifeCycle) Update(data []byte) {
 }
 
 // It's equivalent to Update method which does syncs in proper order
-func (c *ConfigLifeCycle) WeaveSync(data []byte) {
+func (c *ConfigLifeCycle) WeaveSync(data []byte) error {
 	configModel := config.CreateConfigModel(data)
-	newConfig := &config.Config{}
 
-	if c.CurrentConfig == nil {
-		c.CurrentConfig = newConfig
-	} else {
-		c.OldConfig = c.CurrentConfig
-		c.CurrentConfig = newConfig
+	if configModel.IsEmpty() {
+		return CreateEmptyConfigError()
 	}
+
+	newConfig := c.CreateNewConfig()
 
 	newConfig.AddSettings(configModel.Settings)
 	newConfig.AddVlans(configModel.Vlans)
@@ -54,6 +52,19 @@ func (c *ConfigLifeCycle) WeaveSync(data []byte) {
 
 	newConfig.AddRules(configModel.Rules)
 	c.SyncRulesState()
+
+	return nil
+}
+
+func (c *ConfigLifeCycle) CreateNewConfig() *config.Config {
+	newConfig := &config.Config{}
+	if c.CurrentConfig == nil {
+		c.CurrentConfig = newConfig
+	} else {
+		c.OldConfig = c.CurrentConfig
+		c.CurrentConfig = newConfig
+	}
+	return newConfig
 }
 
 func (c *ConfigLifeCycle) PersistState() {

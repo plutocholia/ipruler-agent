@@ -20,6 +20,19 @@ type RouteModel struct {
 	Scope    string `yaml:"scope"`
 }
 
+func (r *RouteModel) IsEmpty() bool {
+	if r.To == "" &&
+		r.Via == "" &&
+		r.Table == 0 &&
+		r.Dev == "" &&
+		r.Protocol == "" &&
+		!r.OnLink &&
+		r.Scope == "" {
+		return true
+	}
+	return false
+}
+
 func getReachableLink(ip net.IP) netlink.Link {
 	routes, err := netlink.RouteGet(ip)
 	if err != nil {

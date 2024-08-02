@@ -15,7 +15,7 @@ spec:
       hostNetwork: true
       containers:
       - name: ipruler
-        image: plutocholia/ipruler:v0.0.3-ubuntu-arm64
+        image: plutocholia/ipruler:v0.0.4-ubuntu-arm64-debug
         imagePullPolicy: "Always"
         env:
         - name: MODE

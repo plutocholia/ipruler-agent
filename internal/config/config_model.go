@@ -19,6 +19,16 @@ type ConfigModel struct {
 	Vlans    []VlanModel   `yaml:"vlans"`
 }
 
+func (c *ConfigModel) IsEmpty() bool {
+	if len(c.Rules) == 0 &&
+		c.Settings.IsEmpty() &&
+		len(c.Routes) == 0 &&
+		len(c.Vlans) == 0 {
+		return true
+	}
+	return false
+}
+
 // General Functions
 func CreateConfigModel(data []byte) *ConfigModel {
 	configModel := ConfigModel{}

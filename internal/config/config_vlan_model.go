@@ -14,6 +14,17 @@ type VlanModel struct {
 	Protocol string `yaml:"protocol"`
 }
 
+func (v *VlanModel) IsEmpty() bool {
+	if v.Name == "" &&
+		v.Link == "" &&
+		v.ID == 0 &&
+		v.Protocol == "" {
+		return true
+	}
+	return false
+
+}
+
 func (v *VlanModel) String() string {
 	return fmt.Sprintf("name: %s - link: %s - id: %d - protocol: %s", v.Name, v.Link, v.ID, v.Protocol)
 }

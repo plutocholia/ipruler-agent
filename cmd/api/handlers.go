@@ -2,6 +2,7 @@ package api
 
 import (
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +13,9 @@ var (
 	configLifeCycle *ipruler.ConfigLifeCycle
 )
 
-func ip(c *gin.Context) {
+func health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"ip":        c.ClientIP(),
-		"remote-ip": c.RemoteIP(),
+		"message": "good, thank you for asking",
 	})
 }
 
@@ -26,14 +26,14 @@ func update(c *gin.Context) {
 		return
 	}
 
-	if string(body) != "" {
-		configLifeCycle.WeaveSync(body)
-		// configLifeCycle.PersistState()
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	err = configLifeCycle.WeaveSync(body)
+	if _err, ok := err.(*ipruler.EmptyConfig); ok {
+		log.Println(_err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": _err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusBadRequest, gin.H{"status": "BadConfigFile"})
+	// configLifeCycle.PersistState()
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func init() {
