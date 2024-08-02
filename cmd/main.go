@@ -4,14 +4,9 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"os"
-	"reflect"
-	"time"
 
 	env "github.com/Netflix/go-env"
-	"github.com/gin-gonic/gin"
 	"github.com/plutocholia/ipruler/internal/api"
-	"github.com/plutocholia/ipruler/internal/ipruler"
 )
 
 var (
@@ -45,38 +40,6 @@ Environments:
 `, e.Mode, e.EnablePersistence, e.APIPort, e.ConfigPath, e.ConfigReloadDuration, e.LogLevel)
 }
 
-func apiMode() {
-	app := gin.Default()
-	api.SetupRoutes(app)
-	go api.BackgroundSync(envirnment.ConfigReloadDuration)
-	app.Run(fmt.Sprintf("0.0.0.0:%s", envirnment.APIPort))
-}
-
-func configBasedMode() {
-	var oldData []byte
-
-	configLifeCycle := ipruler.CreateConfigLifeCycle()
-
-	for {
-		data, err := os.ReadFile(envirnment.ConfigPath)
-		if err != nil {
-			log.Fatalf("error: %v", err)
-		}
-
-		if !reflect.DeepEqual(data, oldData) {
-			log.Println("detected changes in config")
-			oldData = data
-		}
-
-		configLifeCycle.WaveSync(data)
-		if envirnment.EnablePersistence {
-			configLifeCycle.PersistState()
-		}
-
-		time.Sleep(time.Duration(envirnment.ConfigReloadDuration) * time.Second)
-	}
-}
-
 func main() {
 	log.Println(envirnment.String())
 
@@ -91,9 +54,9 @@ func main() {
 
 	switch envirnment.Mode {
 	case "api":
-		apiMode()
+		api.SetupHttpApiMode(envirnment.ConfigReloadDuration, envirnment.APIPort)
 	case "ConfigBased":
-		configBasedMode()
+		api.SetupConfigfileBasedMode(envirnment.ConfigPath, envirnment.EnablePersistence, envirnment.ConfigReloadDuration)
 	default:
 		log.Fatalf("mode %s is not defined", envirnment.Mode)
 	}

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -9,24 +10,30 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/plutocholia/ipruler/internal/ipruler"
 )
 
-var (
+type HttpApi struct {
 	configLifeCycle *ipruler.ConfigLifeCycle
 	lock            sync.Mutex
 	data            []byte
-)
+}
 
-func health(c *gin.Context) {
+func (a *HttpApi) setupRoutes(app *gin.Engine) {
+	app.GET("/health", a.health)
+	app.POST("/update", a.update)
+}
+
+func (a *HttpApi) health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "good, thank you for asking",
 	})
 }
 
-func update(c *gin.Context) {
-	lock.Lock()
-	defer lock.Unlock()
+func (a *HttpApi) update(c *gin.Context) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -34,34 +41,40 @@ func update(c *gin.Context) {
 		return
 	}
 
-	err = configLifeCycle.WaveSync(body)
+	err = a.configLifeCycle.WaveSync(body)
 	if _err, ok := err.(*ipruler.EmptyConfig); ok {
 		log.Println(_err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": _err.Error()})
 		return
 	}
 	// configLifeCycle.PersistState()
-	data = body
+	a.data = body
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func init() {
-	configLifeCycle = ipruler.CreateConfigLifeCycle()
-}
-
-func BackgroundSync(configReloadDuration uint) {
+func (a *HttpApi) backgroundSync(configReloadDuration uint) {
 	var oldData []byte
 
 	clc := ipruler.CreateConfigLifeCycle()
 
 	for {
-		lock.Lock()
-		if !reflect.DeepEqual(data, oldData) {
+		a.lock.Lock()
+		if !reflect.DeepEqual(a.data, oldData) {
 			log.Println("detected changes in config")
-			oldData = data
+			oldData = a.data
 		}
-		clc.WaveSync(data)
-		lock.Unlock()
+		clc.WaveSync(a.data)
+		a.lock.Unlock()
 		time.Sleep(time.Duration(configReloadDuration) * time.Second)
 	}
+}
+
+func SetupHttpApiMode(configReloadDuration uint, port string) {
+	api := HttpApi{
+		configLifeCycle: ipruler.CreateConfigLifeCycle(),
+	}
+	app := gin.Default()
+	api.setupRoutes(app)
+	go api.backgroundSync(configReloadDuration)
+	app.Run(fmt.Sprintf("0.0.0.0:%s", port))
 }
