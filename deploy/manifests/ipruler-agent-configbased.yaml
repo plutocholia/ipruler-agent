@@ -15,7 +15,7 @@ spec:
       hostNetwork: true
       containers:
       - name: ipruler
-        image: plutocholia/ipruler:v0.0.1-ubuntu-arm64
+        image: plutocholia/ipruler:v0.1.0
         imagePullPolicy: "Always"
         # command: ["/bin/bash", "-c", "--"]
         # args: ["while true; do sleep 30; done;"]

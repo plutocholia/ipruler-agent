@@ -2,17 +2,11 @@ agent-config:
   mode: api
   config-reload-duration-seconds: 15
   enable-persistence: false
-  api-port: 8080
-
-# ipruler-config:
-#   rules:
-#   - from: 172.31.201.12/32
-#     table: 102
 
 image:
-  repository: plutocholia/ipruler
-  tag: v0.0.6-ubuntu-arm64-debug
-  pullPolicy: Always
+  repository: plutocholia/ipruler-agent
+  tag: ~
+  pullPolicy: IfNotPresent
 
 resources: {}
   # limits:
@@ -21,3 +15,8 @@ resources: {}
   # requests:
   #   cpu: 250m
   #   memory: 128Mi
+
+# ipruler-config:
+#   rules:
+#   - from: 172.31.201.12/32
+#     table: 102
