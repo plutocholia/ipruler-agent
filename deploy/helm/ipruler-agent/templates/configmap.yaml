@@ -1,0 +1,16 @@
+{{- if eq (index .Values "agent-config" "mode") "ConfigBased" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ipruler-agent.fullname" . }}
+  namespace: {{.Release.Namespace}}
+  labels:
+  {{- include "ipruler-agent.labels" . | nindent 4 }}
+data:
+{{- if (index .Values "ipruler-config") }}
+  config.yaml: |
+{{- toYaml (index .Values "ipruler-config") | nindent 4 }}
+{{- else }}
+  config.yaml: ""
+{{- end }}
+{{- end }}

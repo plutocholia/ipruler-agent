@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "ipruler-agent.fullname" . }}
+  namespace: {{.Release.Namespace}}
+  labels:
+  {{- include "ipruler-agent.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: ipruler-agent
+    {{- include "ipruler-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: ipruler-agent
+      {{- include "ipruler-agent.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        {{- with (index .Values "agent-config" "mode") }}
+        - name: MODE
+          value: {{ quote . }}
+        {{- end }}
+        {{- with (index .Values "agent-config" "config-reload-duration-seconds") }}
+        - name: CONFIG_RELOAD_DURATION_SECONDS
+          value: {{ quote . }}
+        {{- end }}
+        {{- with (index .Values "agent-config" "enable-persistence") }}
+        - name: ENABLE_PERSISTENCE
+          value: {{ quote . }}
+        {{- end }}
+        {{- with (index .Values "agent-config" "api-port") }}
+        - name: API_PORT
+          value: {{ quote . }}
+        {{- end }}
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        name: ipruler
+        {{- if .Values.resources }}
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        {{- end }}
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        {{- if or (eq (index .Values "agent-config" "mode") "ConfigBased") (index .Values "agent-config" "enable-persistence") }}
+        volumeMounts:
+        {{- if (index .Values "agent-config" "enable-persistence") }}
+        - name: host-network-dispatcher
+          mountPath: /etc/networkd-dispatcher/routable.d
+        {{- end }}
+        {{- if (eq (index .Values "agent-config" "mode") "ConfigBased") }}
+        - name: config-yaml
+          mountPath: /app/config
+        {{- end }}
+        {{- end }}
+      hostNetwork: true
+      {{- if or (eq (index .Values "agent-config" "mode") "ConfigBased") (index .Values "agent-config" "enable-persistence") }}
+      volumes:
+      {{- if (index .Values "agent-config" "enable-persistence") }}
+      - name: host-network-dispatcher
+        hostPath:
+          path: /etc/networkd-dispatcher/routable.d
+          type: Directory
+      {{- end }}
+      {{- if (eq (index .Values "agent-config" "mode") "ConfigBased") }}
+      - name: config-yaml
+        configMap:
+          defaultMode: 420
+          name: {{ include "ipruler-agent.fullname" . }}
+          items:
+          - key: config.yaml
+            path: config.yaml
+      {{- end }}
+      {{- end }}
