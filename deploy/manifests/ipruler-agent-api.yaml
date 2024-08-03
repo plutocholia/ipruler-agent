@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ipruler
+  name: ipruler-agent
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      app: ipruler
+      app: ipruler-agent
   template:
     metadata:
       labels:
-        app: ipruler
+        app: ipruler-agent
     spec:
       hostNetwork: true
       containers:

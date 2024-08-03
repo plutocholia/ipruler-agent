@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ipruler
+  name: ipruler-agent
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      app: ipruler
+      app: ipruler-agent
   template:
     metadata:
       labels:
-        app: ipruler
+        app: ipruler-agent
     spec:
       hostNetwork: true
       containers:
@@ -41,7 +41,7 @@ spec:
       - name: config-yaml
         configMap:
           defaultMode: 420
-          name: ipruler
+          name: ipruler-agent
           items:
           - key: config.yaml
             path: config.yaml
@@ -49,7 +49,8 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ipruler
+  name: ipruler-agent
+  namespace: kube-system
 data:
   config.yaml: |
     settings:
