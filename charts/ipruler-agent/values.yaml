@@ -1,5 +1,6 @@
 agent-config:
   mode: api
+  api-port: 9301
   config-reload-duration-seconds: 15
   enable-persistence: false
 
