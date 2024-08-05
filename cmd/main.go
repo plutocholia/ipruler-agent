@@ -23,6 +23,7 @@ type Environment struct {
 	Mode                 string `env:"MODE,default=api"`
 	EnablePersistence    bool   `env:"ENABLE_PERSISTENCE,default=false"`
 	APIPort              string `env:"API_PORT,default=8080"`
+	APIBindAddress       string `env:"API_BIND_ADDRESS,default=0.0.0.0"`
 	ConfigPath           string `env:"CONFIG_PATH,default=./config/config.yaml"`
 	ConfigReloadDuration uint   `env:"CONFIG_RELOAD_DURATION_SECONDS,default=15"`
 	LogLevel             string `env:"LOG_LEVEL,default=INFO"`
@@ -43,18 +44,9 @@ Environments:
 func main() {
 	log.Println(envirnment.String())
 
-	// // setup slog
-	// if value, exists := LogLevelMap[envirnment.LogLevel]; exists {
-	// 	logger := slog.New(slog.NewTextHandler(os.Stderr,
-	// 		&slog.HandlerOptions{Level: slog.Level(value)}))
-	// 	slog.SetDefault(logger)
-	// } else {
-	// 	log.Fatalf("loglevel %s is not valid", envirnment.LogLevel)
-	// }
-
 	switch envirnment.Mode {
 	case "api":
-		api.SetupHttpApiMode(envirnment.ConfigReloadDuration, envirnment.APIPort)
+		api.SetupHttpApiMode(envirnment.ConfigReloadDuration, envirnment.APIPort, envirnment.APIBindAddress)
 	case "ConfigBased":
 		api.SetupConfigfileBasedMode(envirnment.ConfigPath, envirnment.EnablePersistence, envirnment.ConfigReloadDuration)
 	default:

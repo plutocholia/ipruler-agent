@@ -18,6 +18,10 @@ spec:
     spec:
       containers:
       - env:
+        - name: API_BIND_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         {{- with (index .Values "agent-config" "mode") }}
         - name: MODE
           value: {{ quote . }}

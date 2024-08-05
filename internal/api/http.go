@@ -69,12 +69,12 @@ func (a *HttpApi) backgroundSync(configReloadDuration uint) {
 	}
 }
 
-func SetupHttpApiMode(configReloadDuration uint, port string) {
+func SetupHttpApiMode(configReloadDuration uint, port string, bind_address string) {
 	api := HttpApi{
 		configLifeCycle: ipruler.CreateConfigLifeCycle(),
 	}
 	app := gin.Default()
 	api.setupRoutes(app)
 	go api.backgroundSync(configReloadDuration)
-	app.Run(fmt.Sprintf("0.0.0.0:%s", port))
+	app.Run(fmt.Sprintf("%s:%s", bind_address, port))
 }
