@@ -23,6 +23,7 @@ type HttpApi struct {
 func (a *HttpApi) setupRoutes(app *gin.Engine) {
 	app.GET("/health", a.health)
 	app.POST("/update", a.update)
+	app.POST("/cleanup", a.cleanUp)
 }
 
 func (a *HttpApi) health(c *gin.Context) {
@@ -49,6 +50,22 @@ func (a *HttpApi) update(c *gin.Context) {
 	}
 	// configLifeCycle.PersistState()
 	a.data = body
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func (a *HttpApi) cleanUp(c *gin.Context) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+
+	a.data = nil
+
+	err := a.configLifeCycle.Remove()
+	if _err, ok := err.(*ipruler.EmptyConfig); ok {
+		log.Println(_err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": _err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 

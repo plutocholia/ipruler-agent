@@ -57,15 +57,31 @@ func (c *ConfigLifeCycle) WaveSync(data []byte) error {
 	return nil
 }
 
+func (c *ConfigLifeCycle) Remove() error {
+	configModel := config.CreateConfigModel(nil)
+
+	newConfig := c.CreateNewConfig()
+
+	newConfig.AddRules(configModel.Rules)
+	c.SyncRulesState()
+
+	newConfig.AddRoutes(configModel.Routes)
+	c.SyncRoutesState()
+
+	newConfig.AddSettings(configModel.Settings)
+	newConfig.AddVlans(configModel.Vlans)
+	c.SyncVlansState()
+
+	return nil
+}
+
 // Creates new ConfigModel and adds it to the CurrentConfig attr of the ConfigLifeCyle
 func (c *ConfigLifeCycle) CreateNewConfig() *config.Config {
 	newConfig := &config.Config{}
-	if c.CurrentConfig == nil {
-		c.CurrentConfig = newConfig
-	} else {
-		c.OldConfig = c.CurrentConfig
-		c.CurrentConfig = newConfig
-	}
+
+	c.OldConfig = c.CurrentConfig
+	c.CurrentConfig = newConfig
+
 	return newConfig
 }
 
