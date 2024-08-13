@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   ipruler-agent:
   - apiVersion: v2
+    appVersion: v0.1.2
+    created: "2024-08-13T05:06:10.246890465Z"
+    description: Helm chart for ipruler-agent
+    digest: 965dba6234a918e55ebb77b49584a72d521cc4a9741ac9c92c01576c623666eb
+    name: ipruler-agent
+    type: application
+    urls:
+    - https://github.com/plutocholia/ipruler-agent/releases/download/ipruler-agent-0.1.2/ipruler-agent-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
     appVersion: v0.1.1
     created: "2024-08-05T18:40:12.761604431Z"
     description: Helm chart for ipruler-agent
@@ -21,4 +31,4 @@ entries:
     urls:
     - https://github.com/plutocholia/ipruler-agent/releases/download/ipruler-agent-0.1.0/ipruler-agent-0.1.0.tgz
     version: 0.1.0
-generated: "2024-08-05T18:40:12.761622815Z"
+generated: "2024-08-13T05:06:10.246907347Z"
