@@ -1,28 +1,28 @@
 settings:
   table-hard-sync:
-  - 102
-  - 103
+    - 102
+    - 103
 vlans:
-- name: eth2.104
-  link: eth2
-  id: 104
-- name: eth2.105
-  link: eth2
-  id: 105
+  - name: eth2.104
+    link: eth2
+    id: 104
+  - name: eth2.105
+    link: eth2
+    id: 105
 rules:
-- from: 172.31.201.11/32
-  table: 102
-- from: 172.31.201.12/32
-  table: 102
-# - sourceIP: 172.31.201.13/32
-#   table: 103
+  - from: 172.31.201.11/32
+    table: 102
+  - from: 172.31.201.12/32
+    table: 102
+  # - from: 172.31.201.13/32
+  #   table: 103
 routes:
-# - to: 172.31.201.0/26
-#   dev: eth2.105
-#   scope: link
-#   protocol: static
-- to: default
-  via: 172.31.201.1
-  table: 102
-  protocol: static
-  on-link: true
+  # - to: 172.31.201.0/26
+  #   dev: eth2.105
+  #   scope: link
+  #   protocol: static
+  - to: default
+    via: 172.31.201.1
+    table: 102
+    protocol: static
+    on-link: true
